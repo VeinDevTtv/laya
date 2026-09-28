@@ -598,7 +598,6 @@ for path, name, anchor in AUDIT[1:]:
 class Blocked(Exception):
     pass
 
-
 def blocks(hook, ctx):
     try:
         hook(ctx)
@@ -719,7 +718,7 @@ check("docs/hooks/tracing.md/enrich on one state still links", SPAN_LINKS,
 
 # ------------------------------------------------ taught token-budget bodies size the whole call
 #
-# A start hook's ctx.head_max_len / ctx.max_len REPLACE the budgets in force (laya/agent.py), and
+# A start-hook's ctx.head_max_len / ctx.max_len REPLACE the budgets in force (laya/agent.py), and
 # what is in force is the caller's per-call value or the checkpoint default in `agent.cfg`. Once a
 # question's options overflow the head, laya/common.py keeps each of them
 # `max(4, (head_max_len - 16) // k)` tokens -- so `16 + 4 * k` buys exactly the floor it is meant to
@@ -814,6 +813,28 @@ for path, name, anchor in BUDGET[1:]:
          (run_body(other, second), second.head_max_len, second.max_len,
           run_body(other, empty), empty.head_max_len),
          (None, _widest.head_max_len, _widest.max_len, None, _raised.head_max_len))
+
+
+# --------------------------------------------------------------- opt-in local retrieval
+from laya.retrieval import Document, LocalIndex, PreparedContext, SearchHit  # noqa: E402
+
+for param, default in (("backend", "lexical"), ("encoder", None),
+                       ("chunk_size", 1200), ("overlap", 150)):
+    check_param("LocalIndex.__init__", LocalIndex.__init__, param, default, inspect.Parameter.KEYWORD_ONLY)
+for fn in (LocalIndex.search, LocalIndex.prepare):
+    for param, default in (("k", 3), ("document_ids", None), ("min_score", 0.0)):
+        check_param(fn.__qualname__, fn, param, default, inspect.Parameter.KEYWORD_ONLY)
+for param, default in (("context_key", "retrieved_context"), ("max_chars", 6000),
+                       ("token_count", None), ("max_tokens", None)):
+    check_param("LocalIndex.prepare", LocalIndex.prepare, param, default, inspect.Parameter.KEYWORD_ONLY)
+check_param("LocalIndex.prepare", LocalIndex.prepare, "query", inspect.Parameter.empty,
+            inspect.Parameter.KEYWORD_ONLY)
+check("Document fields", [f.name for f in dataclasses.fields(Document)], ["id", "text", "source"])
+check("SearchHit fields", [f.name for f in dataclasses.fields(SearchHit)],
+      ["document_id", "source", "start", "end", "text", "score"])
+check("PreparedContext fields", [f.name for f in dataclasses.fields(PreparedContext)],
+      ["state", "hits", "omitted", "context_chars", "context_tokens", "status"])
+check_true("retrieval remains opt-in, not a Router constructor argument", "retrieval" not in sig(Router.__init__))
 
 
 print("\n%d passed, %d failed" % (len(PASS), len(FAIL)))
