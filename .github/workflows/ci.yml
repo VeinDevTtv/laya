@@ -95,6 +95,11 @@ jobs:
       - name: Import check
         run: python -c "import laya; print(laya.__version__); print(sorted(laya.__all__))"
 
+      - name: Local retrieval regression tests
+        run: |
+          python tests/test_retrieval.py
+          python tests/test_retrieval_regressions.py
+
       - name: Routing and language-detection tests
         run: |
           python tests/test_router.py
@@ -287,6 +292,12 @@ jobs:
       # Windows runner is PowerShell, where `python -c "...; ..."` is not the same command.
       - name: Import check
         run: python -c "import laya; print(laya.__version__); print(sorted(laya.__all__))"
+        shell: bash
+
+      - name: Local retrieval regression tests
+        run: |
+          python tests/test_retrieval.py
+          python tests/test_retrieval_regressions.py
         shell: bash
 
       # Same suites as the Linux job. Guarded with -f so a suite added by another open branch
