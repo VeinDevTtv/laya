@@ -80,15 +80,16 @@ if len(od) > 1:
 
 check_true("pyproject/core parses", len(core) == 5, core)
 check("pyproject/extra tables found", sorted(extras),
-       ["crewai", "fast", "langchain", "langgraph", "llamaindex", "mcp", "onnx", "serve",
-        "structured"])
+       ["crewai", "fast", "langchain", "langgraph", "llamaindex", "mcp", "onnx", "retrieval",
+        "serve", "structured"])
 declared = list(core) + [s for names in extras.values() for s in names]
 expected = sorted(set(declared))
 check("pyproject/extras add names the core does not have",
        sorted({re.split(r"[<>=!;\[ ]", s)[0] for s in declared}
               - {re.split(r"[<>=!;\[ ]", s)[0] for s in core}),
        ["crewai", "fastapi", "langchain-core", "langgraph", "llama-index-core", "mcp", "onnx",
-        "onnxruntime", "onnxscript", "pydantic", "python-multipart", "tilelang", "uvicorn"])
+        "onnxruntime", "onnxscript", "pydantic", "python-multipart", "sentence-transformers",
+        "tilelang", "uvicorn"])
 
 # ---------------------------------------------------------------- the job's own extractor
 deps_job = "\n".join(section(read(os.path.join(".github", "workflows", "security.yml")),
@@ -149,6 +150,10 @@ if sys.version_info >= (3, 11) and extractor:
         check_true("extractor/audits %s, which the image installs" % name,
                    any(re.split(r"[<>=!;\[ ]", s)[0] == name for s in emitted),
                    "Dockerfile installs it through the `serve` extra")
+    # The new optional encoder must enter the real audit, not merely its expected-name list.
+    check_true("extractor/audits retrieval with its declared version floor",
+               "sentence-transformers>=5.0.0" in emitted,
+               "the local retrieval extra must not bypass the all-extras audit")
 else:
     NOTES.append("python %d.%d has no tomllib: the extractor was not executed here, only its "
                  "source was checked (the job pins 3.11+)" % sys.version_info[:2])
