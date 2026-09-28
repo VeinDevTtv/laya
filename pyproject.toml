@@ -76,8 +76,12 @@ crewai = [
     "crewai>=0.28.0",
 ]
 
+# Optional local semantic retrieval. Lexical retrieval needs no extra dependencies.
+retrieval = ["sentence-transformers>=5.0.0"]
+
 [project.scripts]
 laya = "laya.cli:main"
+laya-retrieve = "laya.retrieval_cli:main"
 laya-serve = "laya.serve:main"
 laya-evals = "laya.evals_cli:main"
 laya-mcp-server = "laya.mcp.server:main"

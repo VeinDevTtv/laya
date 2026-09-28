@@ -1,0 +1,54 @@
+name: Local retrieval
+
+on:
+  pull_request:
+    paths:
+      - 'laya/**'
+      - 'tests/test_retrieval*.py'
+      - 'examples/retrieval/**'
+      - 'pyproject.toml'
+      - '.github/workflows/retrieval.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'laya/**'
+      - 'tests/test_retrieval*.py'
+      - 'examples/retrieval/**'
+      - 'pyproject.toml'
+      - '.github/workflows/retrieval.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  retrieval:
+    name: Offline retrieval (py${{ matrix.python }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.10', '3.13']
+    env:
+      HF_HUB_OFFLINE: '1'
+      TRANSFORMERS_OFFLINE: '1'
+      USE_TF: '0'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install only test and packaging tools
+        run: |
+          python -m pip install numpy ruff setuptools wheel
+          python -m pip install --no-deps --no-build-isolation -e .
+      - name: Regression suite (no inference dependencies or checkpoints)
+        run: python -m unittest discover -s tests -p 'test_retrieval*.py' -v
+      - name: Core lint and compilation gates
+        run: |
+          ruff check laya/ --select=E9,F63,F7,F82,F401,F811 --line-length=120
+          python -m compileall -q laya/ tests/
+      - name: Installed CLI smoke test
+        run: |
+          laya-retrieve 'duplicate invoice' --corpus examples/retrieval/policies.jsonl --k 1 > retrieval.json
+          python -c "import json; r=json.load(open('retrieval.json')); assert r['retrieval']['hits'][0]['document_id']=='billing-duplicate'; assert 'prediction' not in r"
