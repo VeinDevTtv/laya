@@ -19,6 +19,9 @@ from .retrieval import Document, LocalIndex, SentenceTransformerEncoder
 
 def load_corpus(path: str, *, max_chars: int = 10_000_000, max_documents: int = 10_000) -> list[Document]:
     """Read bounded UTF-8 JSONL. No URLs or source labels are followed."""
+    for name, value in (("max_chars", max_chars), ("max_documents", max_documents)):
+        if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+            raise ValueError("%s must be a positive integer" % name)
     documents, total = [], 0
     with open(path, encoding="utf-8") as handle:
         while True:

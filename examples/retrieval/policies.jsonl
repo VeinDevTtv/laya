@@ -1,0 +1,3 @@
+{"id":"billing-duplicate","text":"Duplicate invoice or duplicate charge: route the request to billing for investigation. Do not automatically issue a refund; billing verifies payment records first.","source":"demo-policy/billing-v1"}
+{"id":"account-access","text":"Password reset, sign-in failure, or a locked account: route to account support. Never request a password or a one-time authentication code.","source":"demo-policy/account-v1"}
+{"id":"unknown","text":"When the request is not covered by the available policy, or policies conflict, route to human review instead of inventing a rule.","source":"demo-policy/review-v1"}
